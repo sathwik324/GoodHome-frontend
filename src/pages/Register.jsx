@@ -15,8 +15,8 @@ function Register() {
     e.preventDefault();
 
     try {
-      await axios.post(
-        "https://goodhome-backend.onrender.com",
+      await axios.post( 
+        "https://goodhome-backend.onrender.com/api/auth/register",
         { name, email, password }
       );
 

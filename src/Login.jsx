@@ -17,7 +17,7 @@ function Login() {
 
     try {
       const res = await axios.post(
-        "https://goodhome-backend.onrender.com",
+        "https://goodhome-backend.onrender.com/api/auth/login",
         { email, password }
       );
 
