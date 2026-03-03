@@ -1,7 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "../styles/Theme.css";
+import "../styles/theme.css";
+import { Link } from "react-router-dom";
 
 function Register() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ function Register() {
     e.preventDefault();
 
     try {
-      await axios.post( 
+      await axios.post(
         "https://goodhome-backend.onrender.com/api/auth/register",
         { name, email, password }
       );
@@ -23,7 +24,7 @@ function Register() {
       setMsg("Registration successful");
 
       setTimeout(() => {
-        navigate("/");
+        navigate("/login");
       }, 1000);
 
     } catch (err) {
@@ -38,6 +39,7 @@ function Register() {
         <p style={{ opacity: 0.7 }}>Create Account</p>
 
         <form onSubmit={register}>
+          <p>Already have an account? <Link to="/login">Login</Link></p>
           <input
             style={styles.input}
             placeholder="Name"
