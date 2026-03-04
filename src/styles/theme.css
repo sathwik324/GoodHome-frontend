@@ -1,41 +1,107 @@
 :root {
-  /* Modern Dark Theme Palette */
-  --color-bg: #0F172A;
-  /* Slate 900 Background */
-  --color-card: #1E293B;
-  /* Slate 800 Surface */
-  --color-card-hover: #334155;
-  /* Slate 700 */
-  --color-primary: #6366F1;
-  /* Indigo 500 */
-  --color-primary-hover: #4F46E5;
-  /* Indigo 600 */
+  /* ── Color Palette ── */
+  /* Warm cream background inspired by premium home design */
+  --color-bg: #FAF7F2;
+  --color-bg-subtle: #F3EDE4;
 
-  --color-text-primary: #F8FAFC;
-  /* Slate 50 */
-  --color-text-secondary: #94A3B8;
-  /* Slate 400 */
+  /* Card surfaces */
+  --color-card: #FFFFFF;
+  --color-card-hover: #FFF9F3;
+
+  /* Warm terracotta / amber primary */
+  --color-primary: #C2703E;
+  --color-primary-hover: #A85C2F;
+  --color-primary-light: rgba(194, 112, 62, 0.1);
+
+  /* Accent - deep forest */
+  --color-accent: #2D4A3E;
+  --color-accent-light: rgba(45, 74, 62, 0.08);
+
+  /* Text */
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #6B6358;
+  --color-text-muted: #9C9488;
 
   /* Inputs & Borders */
-  --color-input-bg: #0F172A;
-  --color-border: #334155;
-  --color-border-glow: #6366F180;
-  /* Indigo with opacity */
+  --color-input-bg: #FFFFFF;
+  --color-border: #E8E0D6;
+  --color-border-focus: #C2703E;
+  --color-border-glow: rgba(194, 112, 62, 0.25);
+
+  /* Gradient palette */
+  --gradient-hero: linear-gradient(135deg, #FAF7F2 0%, #F3EDE4 40%, #E8DDD0 100%);
+  --gradient-primary: linear-gradient(135deg, #C2703E 0%, #D4894E 50%, #B8612F 100%);
+  --gradient-accent: linear-gradient(135deg, #2D4A3E 0%, #3D6354 100%);
+  --gradient-warm: linear-gradient(135deg, #FAF7F2 0%, #FFF5EB 50%, #F3EDE4 100%);
+  --gradient-card: linear-gradient(145deg, #FFFFFF 0%, #FFF9F3 100%);
 
   /* Spacing */
+  --spacing-xs: 0.25rem;
   --spacing-sm: 0.5rem;
   --spacing-md: 1rem;
   --spacing-lg: 1.5rem;
   --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
 
   /* Border radius */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
 
-  /* Modern Shadows for Depth */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
-  --shadow-glow: 0 0 15px var(--color-border-glow);
+  /* Modern Shadows */
+  --shadow-sm: 0 1px 3px rgba(26, 26, 26, 0.04);
+  --shadow-md: 0 4px 16px rgba(26, 26, 26, 0.06);
+  --shadow-lg: 0 12px 40px rgba(26, 26, 26, 0.08);
+  --shadow-xl: 0 20px 60px rgba(26, 26, 26, 0.1);
+  --shadow-glow: 0 0 20px var(--color-border-glow);
+  --shadow-card: 0 2px 12px rgba(26, 26, 26, 0.04), 0 0 0 1px rgba(232, 224, 214, 0.5);
+
+  /* Typography */
+  --font-heading: 'DM Serif Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark theme override */
+html.dark {
+  --color-bg: #141210;
+  --color-bg-subtle: #1C1916;
+
+  --color-card: #221F1A;
+  --color-card-hover: #2A2620;
+
+  --color-primary: #D4894E;
+  --color-primary-hover: #E09A5F;
+  --color-primary-light: rgba(212, 137, 78, 0.12);
+
+  --color-accent: #7EB09C;
+  --color-accent-light: rgba(126, 176, 156, 0.1);
+
+  --color-text-primary: #F5F0EA;
+  --color-text-secondary: #A09789;
+  --color-text-muted: #6B6358;
+
+  --color-input-bg: #1C1916;
+  --color-border: #332E27;
+  --color-border-focus: #D4894E;
+  --color-border-glow: rgba(212, 137, 78, 0.3);
+
+  --gradient-hero: linear-gradient(135deg, #141210 0%, #1C1916 40%, #221F1A 100%);
+  --gradient-primary: linear-gradient(135deg, #D4894E 0%, #E09A5F 50%, #C2703E 100%);
+  --gradient-accent: linear-gradient(135deg, #2D4A3E 0%, #3D6354 100%);
+  --gradient-warm: linear-gradient(135deg, #141210 0%, #1C1916 50%, #221F1A 100%);
+  --gradient-card: linear-gradient(145deg, #221F1A 0%, #2A2620 100%);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(51, 46, 39, 0.5);
 }

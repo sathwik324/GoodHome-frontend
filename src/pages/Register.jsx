@@ -9,54 +9,136 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const register = async (e) => {
     e.preventDefault();
-
+    setLoading(true);
+    setMsg("");
     try {
       await axios.post(
         "https://goodhome-backend.onrender.com/api/auth/register",
         { name, email, password }
       );
-
       setMsg("Registration successful");
-
       setTimeout(() => {
         navigate("/login");
-      }, 1000);
-
+      }, 800);
     } catch (err) {
       setMsg(err.response?.data?.message || "Register failed");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="page-container">
-      <div className="card">
-        <h2>GoodHome</h2>
-        <p className="subtitle">Create Account</p>
+      <div className="card" style={{ animationDelay: "0.1s" }}>
+        {/* Brand */}
+        <div style={{ marginBottom: "var(--spacing-lg)" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 44,
+              height: 44,
+              borderRadius: "var(--radius-md)",
+              background: "var(--gradient-primary)",
+              marginBottom: "var(--spacing-md)",
+            }}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+          </div>
+          <h2>GoodHome</h2>
+          <p className="subtitle">Create your account to get started.</p>
+        </div>
+
         <p className="auth-link">
-          Already have an account? <Link to="/login">Login</Link>
+          Already have an account? <Link to="/login">Sign In</Link>
         </p>
 
         <form onSubmit={register}>
-          <input
-            placeholder="Name"
-            onChange={(e) => setName(e.target.value)}
-          />
+          <div>
+            <label
+              htmlFor="name"
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: "var(--color-text-muted)",
+                marginBottom: "var(--spacing-xs)",
+              }}
+            >
+              Full Name
+            </label>
+            <input
+              id="name"
+              placeholder="Your full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
 
-          <input
-            placeholder="Email"
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          <div>
+            <label
+              htmlFor="email"
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: "var(--color-text-muted)",
+                marginBottom: "var(--spacing-xs)",
+              }}
+            >
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
 
-          <input
-            type="password"
-            placeholder="Password"
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <div>
+            <label
+              htmlFor="password"
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                color: "var(--color-text-muted)",
+                marginBottom: "var(--spacing-xs)",
+              }}
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Create a password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-          <button className="btn-primary">Register</button>
+          <button className="btn-primary" disabled={loading}>
+            {loading ? "Creating account..." : "Create Account"}
+          </button>
         </form>
 
         {msg && <p className="msg-alert">{msg}</p>}

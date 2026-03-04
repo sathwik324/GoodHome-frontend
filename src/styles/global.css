@@ -1,135 +1,277 @@
 @import "./theme.css";
 
-/* Base Body Styles */
-html,
+/* ── Google Fonts are loaded via index.html ── */
+
+/* Reset & Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
-    /* Radial gradient for a modern deep background */
-    background: radial-gradient(circle at top right, #1E1B4B, var(--color-bg));
-    color: var(--color-text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  background: var(--gradient-hero);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
 }
 
-/* Base transitions applied globally */
-* {
-    box-sizing: border-box;
-    transition: all 0.2s ease-in-out;
-}
-
-/* Layout Utilities */
+/* ── Layout Utilities ── */
 .page-container {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: var(--spacing-md);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-md);
+  position: relative;
+  overflow: hidden;
 }
 
-/* Glassmorphic/Modern Card */
+/* Warm ambient gradient orbs for auth pages */
+.page-container::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(194, 112, 62, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.page-container::after {
+  content: "";
+  position: absolute;
+  bottom: -15%;
+  left: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(45, 74, 62, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ── Modern Card ── */
 .card {
-    background-color: var(--color-card);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
-    width: 100%;
-    max-width: 400px;
-    box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
+  background: var(--gradient-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl) var(--spacing-xl);
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
 }
 
-/* Typography elements inside Card */
+.card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Card Typography ── */
 .card h2 {
-    margin-top: 0;
-    margin-bottom: var(--spacing-sm);
-    font-weight: 700;
-    font-size: 1.75rem;
+  margin-top: 0;
+  margin-bottom: var(--spacing-xs);
+  font-family: var(--font-heading);
+  font-weight: 400;
+  font-size: 2rem;
+  letter-spacing: -0.01em;
+  color: var(--color-text-primary);
 }
 
 .card p.subtitle {
-    color: var(--color-text-secondary);
-    margin-top: 0;
-    font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  margin-top: 0;
+  margin-bottom: var(--spacing-sm);
+  font-size: 0.95rem;
+  font-weight: 400;
 }
 
-/* Form Elements */
+/* ── Form Elements ── */
 form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    margin-top: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
 }
 
 input {
-    width: 100%;
-    background-color: var(--color-input-bg);
-    border: 1px solid var(--color-border);
-    color: var(--color-text-primary);
-    padding: 14px 16px;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    outline: none;
+  width: 100%;
+  background-color: var(--color-input-bg);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 
 input:focus {
-    border-color: var(--color-primary);
-    box-shadow: var(--shadow-glow);
+  border-color: var(--color-border-focus);
+  box-shadow: var(--shadow-glow);
+  background-color: var(--color-card);
 }
 
 input::placeholder {
-    color: var(--color-text-secondary);
+  color: var(--color-text-muted);
+  font-weight: 400;
 }
 
-/* Primary Button */
+/* ── Primary Button with Gradient ── */
 .btn-primary {
-    width: 100%;
-    background-color: var(--color-primary);
-    color: white;
-    border: none;
-    padding: 14px 16px;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: var(--spacing-sm);
-    box-shadow: var(--shadow-md);
+  width: 100%;
+  background: var(--gradient-primary);
+  color: #FFFFFF;
+  border: none;
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  margin-top: var(--spacing-sm);
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
 
 .btn-primary:hover {
-    background-color: var(--color-primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
 }
 
 .btn-primary:active {
-    transform: translateY(1px);
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Links */
+/* ── Secondary / Outline Button ── */
+.btn-secondary {
+  width: 100%;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-border);
+  padding: 12px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-secondary:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+/* ── Links ── */
 a {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 500;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
 }
 
 a:hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
+  opacity: 0.8;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--color-primary);
 }
 
 .auth-link {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    text-align: center;
-    margin-bottom: var(--spacing-sm);
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-bottom: var(--spacing-xs);
 }
 
-/* Message / Alerts */
+/* ── Message / Alerts ── */
 .msg-alert {
-    margin-top: var(--spacing-md);
-    text-align: center;
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
+  margin-top: var(--spacing-md);
+  text-align: center;
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--spacing-lg) 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .card {
+    padding: var(--spacing-xl) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    max-width: 100%;
+  }
+
+  .card h2 {
+    font-size: 1.6rem;
+  }
+
+  .page-container {
+    padding: var(--spacing-sm);
+  }
+}
+
+/* ── Animations ── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s var(--transition-base) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s var(--transition-base) forwards;
 }
