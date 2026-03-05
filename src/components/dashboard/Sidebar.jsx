@@ -1,3 +1,4 @@
+import { NavLink } from "react-router-dom";
 import {
     LayoutDashboard,
     MessageSquare,
@@ -11,17 +12,19 @@ import {
 } from "lucide-react";
 
 const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", active: true },
-    { icon: MessageSquare, label: "Channels" },
-    { icon: Users, label: "Members", badge: 12 },
-    { icon: CalendarDays, label: "Events" },
-    { icon: Image, label: "Media" },
-    { icon: Settings, label: "Settings" },
+    { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
+    { icon: MessageSquare, label: "Channels", to: "/dashboard/channels" },
+    { icon: Users, label: "Members", to: "/dashboard/members", badge: 12 },
+    { icon: CalendarDays, label: "Events", to: "/dashboard/events" },
+    { icon: Image, label: "Media", to: "/dashboard/media" },
+    { icon: Settings, label: "Settings", to: "/dashboard/settings" },
 ];
 
-function Sidebar({ collapsed, onToggle, mobileOpen }) {
+function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }) {
     return (
-        <aside className={`sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-open" : ""}`}>
+        <aside
+            className={`sidebar${collapsed ? " collapsed" : ""}${mobileOpen ? " mobile-open" : ""}`}
+        >
             {/* Brand */}
             <div className="sidebar-brand">
                 <div className="brand-icon">
@@ -33,14 +36,17 @@ function Sidebar({ collapsed, onToggle, mobileOpen }) {
             {/* Navigation */}
             <nav className="sidebar-nav">
                 {navItems.map((item) => (
-                    <button
+                    <NavLink
                         key={item.label}
-                        className={`nav-item${item.active ? " active" : ""}`}
+                        to={item.to}
+                        end={item.to === "/dashboard"}
+                        className={({ isActive }) => `nav-item${isActive ? " active" : ""}`}
+                        onClick={onMobileClose}
                     >
                         <item.icon className="nav-icon" size={20} />
                         <span className="nav-label">{item.label}</span>
                         {item.badge && <span className="nav-badge">{item.badge}</span>}
-                    </button>
+                    </NavLink>
                 ))}
             </nav>
 

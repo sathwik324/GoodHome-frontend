@@ -1,6 +1,6 @@
 import { Bell, Moon, Menu } from "lucide-react";
 
-function TopBar({ userName, onHamburgerClick }) {
+function TopBar({ userName, pageTitle, onHamburgerClick }) {
     const initials = userName
         ? userName
             .split(" ")
@@ -16,7 +16,7 @@ function TopBar({ userName, onHamburgerClick }) {
                     <Menu size={20} />
                 </button>
                 <div className="topbar-left">
-                    <h2>Dashboard</h2>
+                    <h2>{pageTitle || "Dashboard"}</h2>
                     <p>Welcome back, {userName || "User"}</p>
                 </div>
             </div>
