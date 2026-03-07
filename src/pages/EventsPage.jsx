@@ -1,37 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import axios from "axios";
 import { CalendarDays, Plus, Trash2, X, Clock } from "lucide-react";
 
-// TODO: Replace with GET /api/events when backend endpoint exists
-const placeholderEvents = [
-    { _id: "1", title: "Sunday Family Dinner", date: "2026-03-08", time: "18:00", description: "Monthly family dinner at Mom's house.", createdBy: "Mom" },
-    { _id: "2", title: "Game Night", date: "2026-03-10", time: "20:00", description: "Board games and snacks!", createdBy: "Dad" },
-    { _id: "3", title: "Sarah's Birthday", date: "2026-03-15", time: "14:00", description: "Birthday party at the park. Bring presents!", createdBy: "Alex" },
-    { _id: "4", title: "Family Movie Marathon", date: "2026-03-22", time: "19:00", description: "Watching the entire Lord of the Rings trilogy.", createdBy: "Dad" },
-];
+const API = "https://goodhome-backend.onrender.com/api";
 
 function EventsPage() {
     const { user } = useOutletContext();
-    const [events, setEvents] = useState(placeholderEvents);
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
     const [showCreate, setShowCreate] = useState(false);
     const [form, setForm] = useState({ title: "", date: "", time: "", description: "" });
 
+    const token = localStorage.getItem("token");
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const fetchEvents = () => {
+        setLoading(true);
+        axios
+            .get(`${API}/events`, { headers })
+            .then((res) => { setEvents(res.data); setError(""); })
+            .catch(() => setError("Failed to load events"))
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => { fetchEvents(); }, []);
+
     const handleCreate = (e) => {
         e.preventDefault();
-        // TODO: POST /api/events { ...form }
-        const newEvent = {
-            _id: Date.now().toString(),
-            ...form,
-            createdBy: user?.name || "You",
-        };
-        setEvents([newEvent, ...events]);
-        setShowCreate(false);
-        setForm({ title: "", date: "", time: "", description: "" });
+        axios
+            .post(`${API}/events`, form, { headers })
+            .then(() => {
+                setShowCreate(false);
+                setForm({ title: "", date: "", time: "", description: "" });
+                fetchEvents();
+            })
+            .catch((err) => setError(err.response?.data?.message || "Failed to create event"));
     };
 
     const handleDelete = (id) => {
-        // TODO: DELETE /api/events/:id
-        setEvents(events.filter((e) => e._id !== id));
+        axios
+            .delete(`${API}/events/${id}`, { headers })
+            .then(() => setEvents(events.filter((e) => e._id !== id)))
+            .catch((err) => setError(err.response?.data?.message || "Failed to delete event"));
+    };
+
+    // Check if current user created the event
+    const isCreator = (event) => {
+        if (!user) return false;
+        return event.createdBy === user._id || event.createdBy === user.name || (event.createdBy?._id === user._id);
     };
 
     return (
@@ -44,6 +62,9 @@ function EventsPage() {
                 </button>
             </div>
 
+            {loading && <p style={{ color: "var(--color-text-secondary)" }}>Loading events...</p>}
+            {error && <p style={{ color: "#F87171" }}>{error}</p>}
+
             <div className="events-grid">
                 {events.map((event) => (
                     <div className="event-card" key={event._id}>
@@ -51,7 +72,7 @@ function EventsPage() {
                             <div className="event-icon">
                                 <CalendarDays size={22} />
                             </div>
-                            {event.createdBy === (user?.name || "You") && (
+                            {isCreator(event) && (
                                 <button className="event-delete" onClick={() => handleDelete(event._id)}>
                                     <Trash2 size={16} />
                                 </button>
@@ -60,15 +81,17 @@ function EventsPage() {
                         <h4>{event.title}</h4>
                         <p className="event-meta">
                             <CalendarDays size={14} /> {event.date}
-                            <Clock size={14} style={{ marginLeft: 12 }} /> {event.time}
+                            {event.time && <><Clock size={14} style={{ marginLeft: 12 }} /> {event.time}</>}
                         </p>
-                        <p className="event-desc">{event.description}</p>
-                        <span className="event-creator">Created by {event.createdBy}</span>
+                        {event.description && <p className="event-desc">{event.description}</p>}
+                        <span className="event-creator">Created by {event.createdBy?.name || event.createdBy || "Unknown"}</span>
                     </div>
                 ))}
+                {!loading && events.length === 0 && (
+                    <p className="empty-state">No events yet. Create one!</p>
+                )}
             </div>
 
-            {/* Create Event Modal */}
             {showCreate && (
                 <div className="modal-overlay" onClick={() => setShowCreate(false)}>
                     <div className="modal-card" onClick={(e) => e.stopPropagation()}>

@@ -1,41 +1,66 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import axios from "axios";
 import { User, Mail, Lock, LogOut, Save } from "lucide-react";
+
+const API = "https://goodhome-backend.onrender.com/api";
 
 function SettingsPage() {
     const { user, handleLogout } = useOutletContext();
     const [name, setName] = useState(user?.name || "");
     const [saved, setSaved] = useState(false);
+    const [nameError, setNameError] = useState("");
 
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [pwMsg, setPwMsg] = useState("");
+    const [pwError, setPwError] = useState(false);
+
+    const token = localStorage.getItem("token");
+    const headers = { Authorization: `Bearer ${token}` };
 
     const handleSaveName = (e) => {
         e.preventDefault();
-        // TODO: PATCH /api/auth/profile { name }
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        setNameError("");
+        axios
+            .patch(`${API}/auth/profile`, { name }, { headers })
+            .then(() => {
+                setSaved(true);
+                setTimeout(() => setSaved(false), 2000);
+            })
+            .catch((err) => {
+                setNameError(err.response?.data?.message || "Failed to update name");
+            });
     };
 
     const handleChangePassword = (e) => {
         e.preventDefault();
+        setPwMsg("");
+        setPwError(false);
         if (newPassword !== confirmPassword) {
             setPwMsg("Passwords do not match");
+            setPwError(true);
             return;
         }
-        // TODO: PATCH /api/auth/password { currentPassword, newPassword }
-        setPwMsg("Password changed (backend not yet implemented)");
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        setTimeout(() => setPwMsg(""), 3000);
+        axios
+            .patch(`${API}/auth/password`, { currentPassword, newPassword }, { headers })
+            .then(() => {
+                setPwMsg("Password updated successfully!");
+                setPwError(false);
+                setCurrentPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+                setTimeout(() => setPwMsg(""), 3000);
+            })
+            .catch((err) => {
+                setPwMsg(err.response?.data?.message || "Failed to update password");
+                setPwError(true);
+            });
     };
 
     return (
         <div className="feature-page settings-page">
-            {/* Profile Section */}
             <div className="settings-section">
                 <h3><User size={20} /> Profile Information</h3>
                 <div className="settings-card">
@@ -49,22 +74,17 @@ function SettingsPage() {
                     <form onSubmit={handleSaveName}>
                         <div className="settings-field">
                             <label htmlFor="settings-name">Display Name</label>
-                            <input
-                                id="settings-name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder="Your name"
-                            />
+                            <input id="settings-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
                         </div>
                         <button className="btn-accent" type="submit">
                             <Save size={16} />
                             <span>{saved ? "Saved ✓" : "Save Changes"}</span>
                         </button>
+                        {nameError && <p style={{ color: "#F87171", fontSize: "0.85rem", margin: 0 }}>{nameError}</p>}
                     </form>
                 </div>
             </div>
 
-            {/* Change Password Section */}
             <div className="settings-section">
                 <h3><Lock size={20} /> Change Password</h3>
                 <div className="settings-card">
@@ -85,12 +105,11 @@ function SettingsPage() {
                             <Lock size={16} />
                             <span>Update Password</span>
                         </button>
-                        {pwMsg && <p className="settings-msg">{pwMsg}</p>}
+                        {pwMsg && <p className="settings-msg" style={pwError ? { color: "#F87171" } : {}}>{pwMsg}</p>}
                     </form>
                 </div>
             </div>
 
-            {/* Logout */}
             <div className="settings-section">
                 <div className="settings-card">
                     <button className="btn-danger" onClick={handleLogout}>

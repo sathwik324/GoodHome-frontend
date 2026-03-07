@@ -1,65 +1,51 @@
-import { UserPlus, MessageSquare, CalendarPlus, ImagePlus, Heart } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 
-const activities = [
-    {
-        icon: UserPlus,
-        color: "green",
-        title: "New member joined",
-        description: "Sarah joined the family group.",
-        time: "2 min ago",
-    },
-    {
-        icon: MessageSquare,
-        color: "",
-        title: "Message in #general",
-        description: "Dad shared a recipe in the general channel.",
-        time: "18 min ago",
-    },
-    {
-        icon: CalendarPlus,
-        color: "orange",
-        title: "New event created",
-        description: "Mom created \"Sunday Family Dinner\" for this weekend.",
-        time: "1 hr ago",
-    },
-    {
-        icon: ImagePlus,
-        color: "blue",
-        title: "Photos shared",
-        description: "Alex uploaded 4 photos to the \"Vacation 2026\" album.",
-        time: "3 hrs ago",
-    },
-    {
-        icon: Heart,
-        color: "pink",
-        title: "Milestone reached",
-        description: "Your family group reached 100 shared memories!",
-        time: "Yesterday",
-    },
-];
+function formatTime(dateStr) {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    if (diff < 60) return "Just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+    return `${Math.floor(diff / 86400)} days ago`;
+}
 
-function RecentActivity() {
+function RecentActivity({ activities, loading }) {
+    const hasActivities = activities && activities.length > 0;
+
     return (
         <div className="activity-panel">
             <div className="panel-header">
                 <h3>Recent Activity</h3>
-                <a href="#">View all</a>
             </div>
             <div className="activity-list">
-                {activities.map((item, i) => (
-                    <div className="activity-item" key={i}>
-                        <div className={`activity-icon ${item.color}`}>
-                            <item.icon size={18} />
+                {loading && (
+                    <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>Loading...</p>
+                )}
+                {!loading && !hasActivities && (
+                    <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>
+                        No recent activity yet. Start chatting in a channel!
+                    </p>
+                )}
+                {!loading &&
+                    hasActivities &&
+                    activities.map((item, i) => (
+                        <div className="activity-item" key={item._id || i}>
+                            <div className="activity-icon">
+                                <MessageSquare size={18} />
+                            </div>
+                            <div className="activity-text">
+                                <p>
+                                    <strong>{item.title || item.type || "Activity"}</strong>
+                                </p>
+                                <p>{item.description || item.text || ""}</p>
+                            </div>
+                            <span className="activity-time">
+                                {formatTime(item.createdAt || item.time)}
+                            </span>
                         </div>
-                        <div className="activity-text">
-                            <p>
-                                <strong>{item.title}</strong>
-                            </p>
-                            <p>{item.description}</p>
-                        </div>
-                        <span className="activity-time">{item.time}</span>
-                    </div>
-                ))}
+                    ))}
             </div>
         </div>
     );

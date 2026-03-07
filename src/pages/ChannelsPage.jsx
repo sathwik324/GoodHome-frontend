@@ -1,79 +1,111 @@
 import { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
+import axios from "axios";
 import { Hash, Send } from "lucide-react";
 
-// TODO: Replace with GET /api/channels when backend endpoint exists
-const placeholderChannels = [
-    { _id: "1", name: "general" },
-    { _id: "2", name: "recipes" },
-    { _id: "3", name: "vacation-planning" },
-    { _id: "4", name: "photos" },
-    { _id: "5", name: "announcements" },
-];
+const API = "https://goodhome-backend.onrender.com/api";
 
-// TODO: Replace with GET /api/channels/:id/messages when backend endpoint exists
-const placeholderMessages = {
-    "1": [
-        { _id: "m1", sender: "Mom", text: "Hey everyone! Don't forget dinner on Sunday 🍕", time: "10:30 AM" },
-        { _id: "m2", sender: "Dad", text: "I'll bring the grill!", time: "10:45 AM" },
-        { _id: "m3", sender: "Sarah", text: "Can I invite my friend?", time: "11:02 AM" },
-        { _id: "m4", sender: "Mom", text: "Of course! The more the merrier 😊", time: "11:05 AM" },
-        { _id: "m5", sender: "Alex", text: "I'll make dessert", time: "11:30 AM" },
-    ],
-    "2": [
-        { _id: "m6", sender: "Mom", text: "Try this pasta recipe I found!", time: "9:00 AM" },
-        { _id: "m7", sender: "Dad", text: "Looks delicious. Adding to my list.", time: "9:15 AM" },
-    ],
-    "3": [
-        { _id: "m8", sender: "Alex", text: "How about Goa in April?", time: "Yesterday" },
-        { _id: "m9", sender: "Sarah", text: "Yes!! I've been wanting to go!", time: "Yesterday" },
-    ],
-    "4": [
-        { _id: "m10", sender: "Sarah", text: "Check out these sunset photos from last week 🌅", time: "2 days ago" },
-    ],
-    "5": [
-        { _id: "m11", sender: "Mom", text: "Family Zoom call this Saturday at 5 PM.", time: "3 days ago" },
-    ],
-};
+function formatTime(dateStr) {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    if (diff < 60) return "Just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return date.toLocaleDateString();
+}
 
 function ChannelsPage() {
     const { user } = useOutletContext();
-    const [activeChannel, setActiveChannel] = useState("1");
-    const [allMessages, setAllMessages] = useState(placeholderMessages);
+    const [channels, setChannels] = useState([]);
+    const [activeChannel, setActiveChannel] = useState(null);
+    const [messages, setMessages] = useState([]);
     const [newMsg, setNewMsg] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [msgsLoading, setMsgsLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
-    const messages = allMessages[activeChannel] || [];
-    const channelName = placeholderChannels.find((c) => c._id === activeChannel)?.name || "";
+    const token = localStorage.getItem("token");
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // Fetch channels on mount
+    useEffect(() => {
+        axios
+            .get(`${API}/channels`, { headers })
+            .then((res) => {
+                setChannels(res.data);
+                if (res.data.length > 0) setActiveChannel(res.data[0]._id);
+            })
+            .catch(() => { })
+            .finally(() => setLoading(false));
+    }, []);
+
+    // Fetch messages when active channel changes
+    const fetchMessages = (channelId) => {
+        if (!channelId) return;
+        axios
+            .get(`${API}/channels/${channelId}/messages`, { headers })
+            .then((res) => setMessages(res.data))
+            .catch(() => setMessages([]))
+            .finally(() => setMsgsLoading(false));
+    };
 
     useEffect(() => {
+        if (!activeChannel) return;
+        setMsgsLoading(true);
+        fetchMessages(activeChannel);
+    }, [activeChannel]);
+
+    // Poll for new messages every 5 seconds
+    useEffect(() => {
+        if (!activeChannel) return;
+        const interval = setInterval(() => fetchMessages(activeChannel), 5000);
+        return () => clearInterval(interval);
+    }, [activeChannel]);
+
+    // Auto-scroll on new messages
+    useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages.length, activeChannel]);
+    }, [messages.length]);
+
+    const activeChannelObj = channels.find((c) => c._id === activeChannel);
+    const channelName = activeChannelObj?.name || "";
 
     const handleSend = (e) => {
         e.preventDefault();
-        if (!newMsg.trim()) return;
+        if (!newMsg.trim() || !activeChannel) return;
 
-        // TODO: POST /api/channels/:id/messages { text: newMsg }
-        const msg = {
-            _id: Date.now().toString(),
-            sender: user?.name || "You",
-            text: newMsg,
-            time: "Just now",
-        };
-        setAllMessages({
-            ...allMessages,
-            [activeChannel]: [...(allMessages[activeChannel] || []), msg],
-        });
-        setNewMsg("");
+        axios
+            .post(`${API}/channels/${activeChannel}/messages`, { text: newMsg }, { headers })
+            .then((res) => {
+                setMessages((prev) => [...prev, res.data]);
+                setNewMsg("");
+            })
+            .catch(() => { });
     };
+
+    // Resolve sender name — sender could be an ID string or a populated object
+    const getSenderName = (msg) => {
+        if (msg.sender?.name) return msg.sender.name;
+        if (msg.senderName) return msg.senderName;
+        if (msg.sender === user?._id) return user.name;
+        return String(msg.sender || "").substring(0, 6);
+    };
+
+    if (loading) {
+        return (
+            <div className="channels-layout">
+                <p style={{ padding: 20, color: "var(--color-text-secondary)" }}>Loading channels...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="channels-layout">
-            {/* Channel List */}
             <div className="channel-list">
                 <h4 className="channel-list-title">Channels</h4>
-                {placeholderChannels.map((ch) => (
+                {channels.map((ch) => (
                     <button
                         key={ch._id}
                         className={`channel-item${ch._id === activeChannel ? " active" : ""}`}
@@ -83,9 +115,11 @@ function ChannelsPage() {
                         <span>{ch.name}</span>
                     </button>
                 ))}
+                {channels.length === 0 && (
+                    <p style={{ padding: "0 16px", color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>No channels yet</p>
+                )}
             </div>
 
-            {/* Message Thread */}
             <div className="channel-thread">
                 <div className="channel-thread-header">
                     <Hash size={18} />
@@ -93,15 +127,19 @@ function ChannelsPage() {
                 </div>
 
                 <div className="channel-messages">
+                    {msgsLoading && <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>Loading messages...</p>}
+                    {!msgsLoading && messages.length === 0 && (
+                        <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>No messages yet. Say hello!</p>
+                    )}
                     {messages.map((msg) => (
                         <div className="message-item" key={msg._id}>
                             <div className="message-avatar">
-                                {msg.sender.charAt(0).toUpperCase()}
+                                {getSenderName(msg).charAt(0).toUpperCase()}
                             </div>
                             <div className="message-body">
                                 <div className="message-meta">
-                                    <strong>{msg.sender}</strong>
-                                    <span>{msg.time}</span>
+                                    <strong>{getSenderName(msg)}</strong>
+                                    <span>{formatTime(msg.createdAt || msg.time)}</span>
                                 </div>
                                 <p>{msg.text}</p>
                             </div>

@@ -1,25 +1,14 @@
-const quickStats = [
-    {
-        label: "Most Active Member",
-        value: "Mom",
-        progress: 85,
-        fill: "",
-    },
-    {
-        label: "Total Channels",
-        value: "6",
-        progress: 60,
-        fill: "green",
-    },
-    {
-        label: "Photos Shared",
-        value: "234",
-        progress: 72,
-        fill: "blue",
-    },
-];
+function QuickStats({ stats, loading }) {
+    const totalMembers = stats?.totalMembers || 0;
+    const messagesToday = stats?.messagesToday || 0;
+    const upcomingEvents = stats?.upcomingEvents || 0;
 
-function QuickStats() {
+    const quickStats = [
+        { label: "Total Members", value: loading ? "—" : totalMembers, progress: Math.min(totalMembers * 10, 100), fill: "" },
+        { label: "Messages Today", value: loading ? "—" : messagesToday, progress: Math.min(messagesToday, 100), fill: "green" },
+        { label: "Upcoming Events", value: loading ? "—" : upcomingEvents, progress: Math.min(upcomingEvents * 20, 100), fill: "blue" },
+    ];
+
     return (
         <div className="quick-stats-panel">
             <div className="panel-header">
