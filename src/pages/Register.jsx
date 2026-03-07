@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { useNavigate, Link } from "react-router-dom";
 
 function Register() {
@@ -14,8 +14,8 @@ function Register() {
     e.preventDefault();
 
     try {
-      await axios.post(
-        "https://goodhome-backend.onrender.com/api/auth/register",
+      await api.post(
+        "/auth/register",
         { name, email, password }
       );
 

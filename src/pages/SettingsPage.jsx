@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { User, Mail, Lock, LogOut, Save } from "lucide-react";
-
-const API = "https://goodhome-backend.onrender.com/api";
 
 function SettingsPage() {
     const { user, handleLogout } = useOutletContext();
@@ -17,14 +15,11 @@ function SettingsPage() {
     const [pwMsg, setPwMsg] = useState("");
     const [pwError, setPwError] = useState(false);
 
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
     const handleSaveName = (e) => {
         e.preventDefault();
         setNameError("");
-        axios
-            .patch(`${API}/auth/profile`, { name }, { headers })
+        api
+            .patch(`/auth/profile`, { name })
             .then(() => {
                 setSaved(true);
                 setTimeout(() => setSaved(false), 2000);
@@ -43,8 +38,8 @@ function SettingsPage() {
             setPwError(true);
             return;
         }
-        axios
-            .patch(`${API}/auth/password`, { currentPassword, newPassword }, { headers })
+        api
+            .patch(`/auth/password`, { currentPassword, newPassword })
             .then(() => {
                 setPwMsg("Password updated successfully!");
                 setPwError(false);

@@ -1,13 +1,16 @@
 import { Bell, Moon, Menu } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
-function TopBar({ userName, pageTitle, onHamburgerClick, hideHamburger }) {
+function TopBar({ pageTitle, onHamburgerClick, hideHamburger }) {
+    const { user } = useAuth();
+    const userName = user?.name || "User";
+
     const initials = userName
-        ? userName
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .toUpperCase()
-        : "?";
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2);
 
     return (
         <header className="topbar">
@@ -19,7 +22,7 @@ function TopBar({ userName, pageTitle, onHamburgerClick, hideHamburger }) {
                 )}
                 <div className="topbar-left" style={{ marginLeft: hideHamburger ? "20px" : "0" }}>
                     <h2>{pageTitle || "Workspace"}</h2>
-                    <p>Welcome back, {userName || "User"}</p>
+                    <p>Welcome back, {userName}</p>
                 </div>
             </div>
 

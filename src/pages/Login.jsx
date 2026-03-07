@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -14,8 +14,8 @@ function Login() {
     const login = async (e) => {
         e.preventDefault();
         try {
-            const res = await axios.post(
-                "https://goodhome-backend.onrender.com/api/auth/login",
+            const res = await api.post(
+                "/auth/login",
                 { email, password }
             );
 

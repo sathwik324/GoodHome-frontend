@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { CalendarDays, Plus, Trash2, X, Clock } from "lucide-react";
-
-const API = "https://goodhome-backend.onrender.com/api";
 
 function EventsPage() {
     const { user, groupId } = useOutletContext();
@@ -13,14 +11,11 @@ function EventsPage() {
     const [showCreate, setShowCreate] = useState(false);
     const [form, setForm] = useState({ title: "", date: "", time: "", description: "" });
 
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
     const fetchEvents = () => {
         if (!groupId) return;
         setLoading(true);
-        axios
-            .get(`${API}/events?groupId=${groupId}`, { headers })
+        api
+            .get(`/events?groupId=${groupId}`)
             .then((res) => { setEvents(res.data); setError(""); })
             .catch(() => setError("Failed to load events"))
             .finally(() => setLoading(false));
@@ -30,8 +25,8 @@ function EventsPage() {
 
     const handleCreate = (e) => {
         e.preventDefault();
-        axios
-            .post(`${API}/events`, { ...form, groupId }, { headers })
+        api
+            .post(`/events`, { ...form, groupId })
             .then(() => {
                 setShowCreate(false);
                 setForm({ title: "", date: "", time: "", description: "" });
@@ -41,8 +36,8 @@ function EventsPage() {
     };
 
     const handleDelete = (id) => {
-        axios
-            .delete(`${API}/events/${id}`, { headers })
+        api
+            .delete(`/events/${id}`)
             .then(() => setEvents(events.filter((e) => e._id !== id)))
             .catch((err) => setError(err.response?.data?.message || "Failed to delete event"));
     };

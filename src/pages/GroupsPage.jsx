@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { Plus, LogIn, Users, X } from "lucide-react";
 import TopBar from "../components/dashboard/TopBar";
 import { useAuth } from "../context/AuthContext";
-
-const API = "https://goodhome-backend.onrender.com/api";
 
 function GroupsPage() {
     const { logout } = useAuth();
@@ -21,13 +19,10 @@ function GroupsPage() {
     const [inviteCode, setInviteCode] = useState("");
     const [modalError, setModalError] = useState("");
 
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
     const fetchGroups = () => {
         setLoading(true);
-        axios
-            .get(`${API}/groups/my`, { headers })
+        api
+            .get(`/groups/my`)
             .then((res) => {
                 setGroups(res.data);
                 setError("");
@@ -48,25 +43,27 @@ function GroupsPage() {
     const handleCreate = (e) => {
         e.preventDefault();
         setModalError("");
-        axios
-            .post(`${API}/groups/create`, createForm, { headers })
+        api
+            .post(`/groups/create`, createForm)
             .then(() => {
                 setShowCreate(false);
                 setCreateForm({ name: "", description: "" });
                 fetchGroups();
             })
-            .catch((err) => setModalError(err.response?.data?.message || "Failed to create group"));
+            .catch((err) => {
+                console.error("Create Group Error:", err);
+                setModalError(err.response?.data?.message || "Failed to create group");
+            });
     };
 
     const handleJoin = (e) => {
         e.preventDefault();
         setModalError("");
-        axios
-            .post(`${API}/groups/join`, { inviteCode }, { headers })
+        api
+            .post(`/groups/join`, { inviteCode })
             .then((res) => {
                 setShowJoin(false);
                 setInviteCode("");
-                // Assuming response includes the joined group's ID
                 const newlyJoinedId = res.data?.group?._id || res.data?._id;
                 if (newlyJoinedId) {
                     navigate(`/groups/${newlyJoinedId}/channels`);
@@ -74,14 +71,16 @@ function GroupsPage() {
                     fetchGroups();
                 }
             })
-            .catch((err) => setModalError(err.response?.data?.message || "Invalid invite code"));
+            .catch((err) => {
+                console.error("Join Group Error:", err);
+                setModalError(err.response?.data?.message || "Invalid invite code");
+            });
     };
 
     return (
         <div className="dashboard-layout">
-            {/* For GroupsPage, we only show a TopBar, no Sidebar needed yet */}
             <div className="dashboard-main" style={{ marginLeft: 0 }}>
-                <TopBar pageTitle="My Groups" hideHamburger={true} userName="User" />
+                <TopBar pageTitle="My Groups" hideHamburger={true} />
 
                 <div className="dashboard-content" style={{ maxWidth: 1200, margin: "0 auto" }}>
                     <div className="feature-header">

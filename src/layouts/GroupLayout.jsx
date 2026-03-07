@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation, useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { useAuth } from "../context/AuthContext";
 import "../styles/dashboard.css";
 
 import Sidebar from "../components/dashboard/Sidebar";
 import TopBar from "../components/dashboard/TopBar";
-
-const API = "https://goodhome-backend.onrender.com/api";
 
 const getPageTitle = (pathname) => {
     if (pathname.includes("/channels")) return "Channels";
@@ -20,10 +18,9 @@ const getPageTitle = (pathname) => {
 
 function GroupLayout() {
     const { groupId } = useParams();
-    const [user, setUser] = useState(null);
     const [group, setGroup] = useState(null);
     const [error, setError] = useState("");
-    const { logout } = useAuth();
+    const { user, logout } = useAuth(); // using user from AuthContext
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -32,33 +29,22 @@ function GroupLayout() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            setError("No token found. Please login.");
-            setLoading(false);
-            return;
-        }
-
-        const headers = { Authorization: `Bearer ${token}` };
-
-        // Fetch user and group info in parallel
-        Promise.all([
-            axios.get(`${API}/auth/me`, { headers }),
-            axios.get(`${API}/groups/${groupId}`, { headers })
-        ])
-            .then(([userRes, groupRes]) => {
-                setUser(userRes.data);
+        api.get(`/groups/${groupId}`)
+            .then((groupRes) => {
                 setGroup(groupRes.data);
             })
             .catch((err) => {
                 if (err.response?.status === 401) {
-                    setError("Session expired. Please login again.");
+                    logout();
+                    navigate("/login");
+                } else if (err.response?.status === 403) {
+                    navigate("/dashboard");
                 } else {
                     setError("Failed to load group workspace. You may not have access.");
                 }
             })
             .finally(() => setLoading(false));
-    }, [groupId]);
+    }, [groupId, navigate, logout]);
 
     const handleLogout = () => {
         logout();
@@ -81,7 +67,7 @@ function GroupLayout() {
         );
     }
 
-    if (error || !user || !group) {
+    if (error || !group) {
         return (
             <div className="dashboard-error">
                 <div className="card">
@@ -112,7 +98,6 @@ function GroupLayout() {
 
             <div className="dashboard-main">
                 <TopBar
-                    userName={user.name}
                     pageTitle={`${group.name} - ${pageTitle}`}
                     onHamburgerClick={() => setMobileOpen(!mobileOpen)}
                 />

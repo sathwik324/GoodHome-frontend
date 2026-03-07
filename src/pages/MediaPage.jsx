@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useOutletContext } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { Upload, X, User, Calendar, Image as ImageIcon } from "lucide-react";
-
-const API = "https://goodhome-backend.onrender.com/api";
 
 function MediaPage() {
     const { user, groupId } = useOutletContext();
@@ -15,14 +13,11 @@ function MediaPage() {
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
 
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
     const fetchMedia = () => {
         if (!groupId) return;
         setLoading(true);
-        axios
-            .get(`${API}/groups/${groupId}/media`, { headers })
+        api
+            .get(`/groups/${groupId}/media`)
             .then((res) => { setMedia(res.data); setError(""); })
             .catch(() => setError("Failed to load media"))
             .finally(() => setLoading(false));
@@ -41,10 +36,10 @@ function MediaPage() {
         formData.append("file", file);
         formData.append("groupId", groupId);
 
-        axios
-            .post(`${API}/media/upload`, formData, {
+        // Content-Type is multipart/form-data
+        api
+            .post(`/media/upload`, formData, {
                 headers: {
-                    ...headers,
                     "Content-Type": "multipart/form-data"
                 }
             })
@@ -93,7 +88,7 @@ function MediaPage() {
             <div className="media-grid">
                 {media.map((item) => (
                     <div className="media-card" key={item._id} onClick={() => setLightbox(item)}>
-                        {/* Backend should return fileUrl or url */}
+                        {/* Using fileUrl from response */}
                         <img src={item.fileUrl || item.url} alt={`Shared by ${getUploaderName(item)}`} loading="lazy" />
                         <div className="media-card-info">
                             <span><User size={13} /> {getUploaderName(item)}</span>

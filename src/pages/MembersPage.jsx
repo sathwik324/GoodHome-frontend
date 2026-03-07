@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { Search, UserPlus, Mail, X } from "lucide-react";
-
-const API = "https://goodhome-backend.onrender.com/api";
 
 function MembersPage() {
     const { user, groupId } = useOutletContext();
@@ -15,14 +13,11 @@ function MembersPage() {
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteMsg, setInviteMsg] = useState("");
 
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
     const fetchMembers = () => {
         if (!groupId) return;
         setLoading(true);
-        axios
-            .get(`${API}/groups/${groupId}/members`, { headers })
+        api
+            .get(`/groups/${groupId}/members`)
             .then((res) => { setMembers(res.data); setError(""); })
             .catch(() => setError("Failed to load members for this group."))
             .finally(() => setLoading(false));
@@ -37,8 +32,8 @@ function MembersPage() {
     const handleInvite = (e) => {
         e.preventDefault();
         setInviteMsg("");
-        axios
-            .post(`${API}/groups/${groupId}/invite`, { email: inviteEmail }, { headers })
+        api
+            .post(`/groups/${groupId}/invite`, { email: inviteEmail })
             .then(() => {
                 setInviteMsg("Invite sent!");
                 setInviteEmail("");
@@ -68,7 +63,6 @@ function MembersPage() {
 
             <div className="members-grid">
                 {filtered.map((memberObj) => {
-                    // Backend might return raw user objects or { user: {...}, role: 'admin' }
                     const m = memberObj.user || memberObj;
                     const role = memberObj.role || m.role || "Member";
 

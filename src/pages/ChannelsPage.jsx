@@ -1,9 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import axios from "axios";
+import api from "../api/axiosInstance";
 import { Hash, Send, Users, MessageCircle, CalendarDays } from "lucide-react";
-
-const API = "https://goodhome-backend.onrender.com/api";
 
 function formatTime(dateStr) {
     if (!dateStr) return "";
@@ -17,7 +15,7 @@ function formatTime(dateStr) {
 }
 
 function ChannelsPage() {
-    const { user, groupId, handleLogout } = useOutletContext();
+    const { user, groupId } = useOutletContext();
     const [channels, setChannels] = useState([]);
     const [activeChannel, setActiveChannel] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -29,17 +27,14 @@ function ChannelsPage() {
     const [stats, setStats] = useState(null);
     const messagesEndRef = useRef(null);
 
-    const token = localStorage.getItem("token");
-    const headers = { Authorization: `Bearer ${token}` };
-
     // Fetch Channels & Stats on mount
     useEffect(() => {
         if (!groupId) return;
         setLoading(true);
 
         Promise.all([
-            axios.get(`${API}/groups/${groupId}/channels`, { headers }).catch(() => ({ data: [] })),
-            axios.get(`${API}/dashboard?groupId=${groupId}`, { headers }).catch(() => ({ data: {} }))
+            api.get(`/groups/${groupId}/channels`).catch(() => ({ data: [] })),
+            api.get(`/dashboard?groupId=${groupId}`).catch(() => ({ data: {} }))
         ]).then(([chRes, stRes]) => {
             const chData = chRes.data || [];
             setChannels(chData);
@@ -51,8 +46,8 @@ function ChannelsPage() {
     // Fetch messages when active channel changes
     const fetchMessages = (channelId) => {
         if (!channelId) return;
-        axios
-            .get(`${API}/channels/${channelId}/messages`, { headers })
+        api
+            .get(`/channels/${channelId}/messages`)
             .then((res) => setMessages(res.data))
             .catch(() => setMessages([]))
             .finally(() => setMsgsLoading(false));
@@ -83,8 +78,8 @@ function ChannelsPage() {
         e.preventDefault();
         if (!newMsg.trim() || !activeChannel) return;
 
-        axios
-            .post(`${API}/channels/${activeChannel}/messages`, { text: newMsg }, { headers })
+        api
+            .post(`/channels/${activeChannel}/messages`, { text: newMsg })
             .then((res) => {
                 setMessages((prev) => [...prev, res.data]);
                 setNewMsg("");
