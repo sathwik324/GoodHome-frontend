@@ -1,6 +1,6 @@
 import { Bell, Moon, Menu } from "lucide-react";
 
-function TopBar({ userName, pageTitle, onHamburgerClick }) {
+function TopBar({ userName, pageTitle, onHamburgerClick, hideHamburger }) {
     const initials = userName
         ? userName
             .split(" ")
@@ -12,11 +12,13 @@ function TopBar({ userName, pageTitle, onHamburgerClick }) {
     return (
         <header className="topbar">
             <div style={{ display: "flex", alignItems: "center" }}>
-                <button className="hamburger-btn" onClick={onHamburgerClick}>
-                    <Menu size={20} />
-                </button>
-                <div className="topbar-left">
-                    <h2>{pageTitle || "Dashboard"}</h2>
+                {!hideHamburger && (
+                    <button className="hamburger-btn" onClick={onHamburgerClick}>
+                        <Menu size={20} />
+                    </button>
+                )}
+                <div className="topbar-left" style={{ marginLeft: hideHamburger ? "20px" : "0" }}>
+                    <h2>{pageTitle || "Workspace"}</h2>
                     <p>Welcome back, {userName || "User"}</p>
                 </div>
             </div>

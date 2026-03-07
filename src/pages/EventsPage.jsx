@@ -6,7 +6,7 @@ import { CalendarDays, Plus, Trash2, X, Clock } from "lucide-react";
 const API = "https://goodhome-backend.onrender.com/api";
 
 function EventsPage() {
-    const { user } = useOutletContext();
+    const { user, groupId } = useOutletContext();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -17,20 +17,21 @@ function EventsPage() {
     const headers = { Authorization: `Bearer ${token}` };
 
     const fetchEvents = () => {
+        if (!groupId) return;
         setLoading(true);
         axios
-            .get(`${API}/events`, { headers })
+            .get(`${API}/events?groupId=${groupId}`, { headers })
             .then((res) => { setEvents(res.data); setError(""); })
             .catch(() => setError("Failed to load events"))
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => { fetchEvents(); }, []);
+    useEffect(() => { fetchEvents(); }, [groupId]);
 
     const handleCreate = (e) => {
         e.preventDefault();
         axios
-            .post(`${API}/events`, form, { headers })
+            .post(`${API}/events`, { ...form, groupId }, { headers })
             .then(() => {
                 setShowCreate(false);
                 setForm({ title: "", date: "", time: "", description: "" });
@@ -46,7 +47,6 @@ function EventsPage() {
             .catch((err) => setError(err.response?.data?.message || "Failed to delete event"));
     };
 
-    // Check if current user created the event
     const isCreator = (event) => {
         if (!user) return false;
         return event.createdBy === user._id || event.createdBy === user.name || (event.createdBy?._id === user._id);
@@ -88,7 +88,7 @@ function EventsPage() {
                     </div>
                 ))}
                 {!loading && events.length === 0 && (
-                    <p className="empty-state">No events yet. Create one!</p>
+                    <p className="empty-state">No events yet in this group.</p>
                 )}
             </div>
 

@@ -6,13 +6,12 @@ import { Search, UserPlus, Mail, X } from "lucide-react";
 const API = "https://goodhome-backend.onrender.com/api";
 
 function MembersPage() {
-    const { user } = useOutletContext();
+    const { user, groupId } = useOutletContext();
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [search, setSearch] = useState("");
     const [showInvite, setShowInvite] = useState(false);
-    const [inviteName, setInviteName] = useState("");
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteMsg, setInviteMsg] = useState("");
 
@@ -20,28 +19,28 @@ function MembersPage() {
     const headers = { Authorization: `Bearer ${token}` };
 
     const fetchMembers = () => {
+        if (!groupId) return;
         setLoading(true);
         axios
-            .get(`${API}/members`, { headers })
+            .get(`${API}/groups/${groupId}/members`, { headers })
             .then((res) => { setMembers(res.data); setError(""); })
-            .catch(() => setError("Failed to load members"))
+            .catch(() => setError("Failed to load members for this group."))
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => { fetchMembers(); }, []);
+    useEffect(() => { fetchMembers(); }, [groupId]);
 
     const filtered = members.filter((m) =>
-        m.name.toLowerCase().includes(search.toLowerCase())
+        (m.name || m.user?.name || "").toLowerCase().includes(search.toLowerCase())
     );
 
     const handleInvite = (e) => {
         e.preventDefault();
         setInviteMsg("");
         axios
-            .post(`${API}/members/invite`, { name: inviteName, email: inviteEmail }, { headers })
+            .post(`${API}/groups/${groupId}/invite`, { email: inviteEmail }, { headers })
             .then(() => {
                 setInviteMsg("Invite sent!");
-                setInviteName("");
                 setInviteEmail("");
                 fetchMembers();
                 setTimeout(() => { setShowInvite(false); setInviteMsg(""); }, 1500);
@@ -64,23 +63,29 @@ function MembersPage() {
                 </button>
             </div>
 
-            {loading && <p style={{ color: "var(--color-text-secondary)" }}>Loading members...</p>}
+            {loading && <p style={{ color: "var(--color-text-secondary)" }}>Loading group members...</p>}
             {error && <p style={{ color: "#F87171" }}>{error}</p>}
 
             <div className="members-grid">
-                {filtered.map((member) => (
-                    <div className="member-card" key={member._id}>
-                        <div className="member-avatar">
-                            {member.name.charAt(0).toUpperCase()}
-                            <span className={`status-dot ${member.online ? "online" : "offline"}`} />
+                {filtered.map((memberObj) => {
+                    // Backend might return raw user objects or { user: {...}, role: 'admin' }
+                    const m = memberObj.user || memberObj;
+                    const role = memberObj.role || m.role || "Member";
+
+                    return (
+                        <div className="member-card" key={m._id || Math.random()}>
+                            <div className="member-avatar">
+                                {(m.name || "?").charAt(0).toUpperCase()}
+                                <span className={`status-dot ${m.online ? "online" : "offline"}`} />
+                            </div>
+                            <div className="member-info">
+                                <h4>{m.name || "Unknown"}</h4>
+                                <p><Mail size={14} /> {m.email || ""}</p>
+                                <span className={`role-badge ${role.toLowerCase()}`}>{role}</span>
+                            </div>
                         </div>
-                        <div className="member-info">
-                            <h4>{member.name}</h4>
-                            <p><Mail size={14} /> {member.email}</p>
-                            <span className={`role-badge ${(member.role || "member").toLowerCase()}`}>{member.role || "Member"}</span>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
                 {!loading && filtered.length === 0 && (
                     <p className="empty-state">No members found{search ? ` matching "${search}"` : ""}</p>
                 )}
@@ -90,13 +95,12 @@ function MembersPage() {
                 <div className="modal-overlay" onClick={() => setShowInvite(false)}>
                     <div className="modal-card" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Invite Family Member</h3>
+                            <h3>Invite to Group</h3>
                             <button className="modal-close" onClick={() => setShowInvite(false)}>
                                 <X size={20} />
                             </button>
                         </div>
                         <form onSubmit={handleInvite}>
-                            <input placeholder="Name" value={inviteName} onChange={(e) => setInviteName(e.target.value)} required />
                             <input placeholder="Email" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required />
                             <button className="btn-primary" type="submit">Send Invite</button>
                             {inviteMsg && <p className="settings-msg">{inviteMsg}</p>}

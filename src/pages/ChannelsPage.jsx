@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import axios from "axios";
-import { Hash, Send } from "lucide-react";
+import { Hash, Send, Users, MessageCircle, CalendarDays } from "lucide-react";
 
 const API = "https://goodhome-backend.onrender.com/api";
 
@@ -17,29 +17,36 @@ function formatTime(dateStr) {
 }
 
 function ChannelsPage() {
-    const { user } = useOutletContext();
+    const { user, groupId, handleLogout } = useOutletContext();
     const [channels, setChannels] = useState([]);
     const [activeChannel, setActiveChannel] = useState(null);
     const [messages, setMessages] = useState([]);
     const [newMsg, setNewMsg] = useState("");
     const [loading, setLoading] = useState(true);
     const [msgsLoading, setMsgsLoading] = useState(false);
+
+    // Dashboard stats specifically for this group
+    const [stats, setStats] = useState(null);
     const messagesEndRef = useRef(null);
 
     const token = localStorage.getItem("token");
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Fetch channels on mount
+    // Fetch Channels & Stats on mount
     useEffect(() => {
-        axios
-            .get(`${API}/channels`, { headers })
-            .then((res) => {
-                setChannels(res.data);
-                if (res.data.length > 0) setActiveChannel(res.data[0]._id);
-            })
-            .catch(() => { })
-            .finally(() => setLoading(false));
-    }, []);
+        if (!groupId) return;
+        setLoading(true);
+
+        Promise.all([
+            axios.get(`${API}/groups/${groupId}/channels`, { headers }).catch(() => ({ data: [] })),
+            axios.get(`${API}/dashboard?groupId=${groupId}`, { headers }).catch(() => ({ data: {} }))
+        ]).then(([chRes, stRes]) => {
+            const chData = chRes.data || [];
+            setChannels(chData);
+            setStats(stRes.data);
+            if (chData.length > 0) setActiveChannel(chData[0]._id);
+        }).finally(() => setLoading(false));
+    }, [groupId]);
 
     // Fetch messages when active channel changes
     const fetchMessages = (channelId) => {
@@ -85,7 +92,6 @@ function ChannelsPage() {
             .catch(() => { });
     };
 
-    // Resolve sender name — sender could be an ID string or a populated object
     const getSenderName = (msg) => {
         if (msg.sender?.name) return msg.sender.name;
         if (msg.senderName) return msg.senderName;
@@ -96,68 +102,87 @@ function ChannelsPage() {
     if (loading) {
         return (
             <div className="channels-layout">
-                <p style={{ padding: 20, color: "var(--color-text-secondary)" }}>Loading channels...</p>
+                <p style={{ padding: 20, color: "var(--color-text-secondary)" }}>Loading workspace...</p>
             </div>
         );
     }
 
     return (
-        <div className="channels-layout">
-            <div className="channel-list">
-                <h4 className="channel-list-title">Channels</h4>
-                {channels.map((ch) => (
-                    <button
-                        key={ch._id}
-                        className={`channel-item${ch._id === activeChannel ? " active" : ""}`}
-                        onClick={() => setActiveChannel(ch._id)}
-                    >
-                        <Hash size={16} />
-                        <span>{ch.name}</span>
-                    </button>
-                ))}
-                {channels.length === 0 && (
-                    <p style={{ padding: "0 16px", color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>No channels yet</p>
-                )}
-            </div>
-
-            <div className="channel-thread">
-                <div className="channel-thread-header">
-                    <Hash size={18} />
-                    <h4>{channelName}</h4>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", height: "100%" }}>
+            {/* Group Stats Top Bar */}
+            {stats && (
+                <div style={{ display: "flex", gap: "16px", background: "var(--color-card)", padding: "12px 20px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginRight: "16px" }}>
+                        <Users size={16} color="#818CF8" /> <strong>{stats.totalMembers || 0}</strong> Members
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-text-secondary)", fontSize: "0.85rem", marginRight: "16px" }}>
+                        <MessageCircle size={16} color="#34D399" /> <strong>{stats.messagesToday || 0}</strong> Messages Today
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>
+                        <CalendarDays size={16} color="#FBBF24" /> <strong>{stats.upcomingEvents || 0}</strong> Upcoming Events
+                    </div>
                 </div>
+            )}
 
-                <div className="channel-messages">
-                    {msgsLoading && <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>Loading messages...</p>}
-                    {!msgsLoading && messages.length === 0 && (
-                        <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>No messages yet. Say hello!</p>
-                    )}
-                    {messages.map((msg) => (
-                        <div className="message-item" key={msg._id}>
-                            <div className="message-avatar">
-                                {getSenderName(msg).charAt(0).toUpperCase()}
-                            </div>
-                            <div className="message-body">
-                                <div className="message-meta">
-                                    <strong>{getSenderName(msg)}</strong>
-                                    <span>{formatTime(msg.createdAt || msg.time)}</span>
-                                </div>
-                                <p>{msg.text}</p>
-                            </div>
-                        </div>
+            {/* Main Split Layout */}
+            <div className="channels-layout" style={{ flex: 1, height: "auto" }}>
+                <div className="channel-list">
+                    <h4 className="channel-list-title">Channels</h4>
+                    {channels.map((ch) => (
+                        <button
+                            key={ch._id}
+                            className={`channel-item${ch._id === activeChannel ? " active" : ""}`}
+                            onClick={() => setActiveChannel(ch._id)}
+                        >
+                            <Hash size={16} />
+                            <span>{ch.name}</span>
+                        </button>
                     ))}
-                    <div ref={messagesEndRef} />
+                    {channels.length === 0 && (
+                        <p style={{ padding: "0 16px", color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>No channels yet</p>
+                    )}
                 </div>
 
-                <form className="message-input" onSubmit={handleSend}>
-                    <input
-                        placeholder={`Message #${channelName}...`}
-                        value={newMsg}
-                        onChange={(e) => setNewMsg(e.target.value)}
-                    />
-                    <button type="submit" className="send-btn">
-                        <Send size={18} />
-                    </button>
-                </form>
+                <div className="channel-thread">
+                    <div className="channel-thread-header">
+                        <Hash size={18} />
+                        <h4>{channelName || "Select a channel"}</h4>
+                    </div>
+
+                    <div className="channel-messages">
+                        {msgsLoading && <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>Loading messages...</p>}
+                        {!msgsLoading && messages.length === 0 && activeChannel && (
+                            <p style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>No messages yet. Say hello!</p>
+                        )}
+                        {messages.map((msg) => (
+                            <div className="message-item" key={msg._id}>
+                                <div className="message-avatar">
+                                    {getSenderName(msg).charAt(0).toUpperCase()}
+                                </div>
+                                <div className="message-body">
+                                    <div className="message-meta">
+                                        <strong>{getSenderName(msg)}</strong>
+                                        <span>{formatTime(msg.createdAt || msg.time)}</span>
+                                    </div>
+                                    <p>{msg.text}</p>
+                                </div>
+                            </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    <form className="message-input" onSubmit={handleSend}>
+                        <input
+                            placeholder={`Message #${channelName}...`}
+                            value={newMsg}
+                            onChange={(e) => setNewMsg(e.target.value)}
+                            disabled={!activeChannel}
+                        />
+                        <button type="submit" className="send-btn" disabled={!activeChannel}>
+                            <Send size={18} />
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     );

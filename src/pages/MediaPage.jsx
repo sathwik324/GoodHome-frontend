@@ -1,47 +1,113 @@
-import { useState } from "react";
-import { Upload, X, User, Calendar } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useOutletContext } from "react-router-dom";
+import axios from "axios";
+import { Upload, X, User, Calendar, Image as ImageIcon } from "lucide-react";
 
-// TODO: Replace with GET /api/media when backend endpoint exists
-const placeholderMedia = [
-    { _id: "1", url: "https://picsum.photos/seed/family1/400/300", uploader: "Mom", date: "Mar 1, 2026" },
-    { _id: "2", url: "https://picsum.photos/seed/family2/400/300", uploader: "Dad", date: "Feb 28, 2026" },
-    { _id: "3", url: "https://picsum.photos/seed/family3/400/300", uploader: "Sarah", date: "Feb 25, 2026" },
-    { _id: "4", url: "https://picsum.photos/seed/family4/400/300", uploader: "Alex", date: "Feb 20, 2026" },
-    { _id: "5", url: "https://picsum.photos/seed/family5/400/300", uploader: "Mom", date: "Feb 18, 2026" },
-    { _id: "6", url: "https://picsum.photos/seed/family6/400/300", uploader: "Dad", date: "Feb 14, 2026" },
-    { _id: "7", url: "https://picsum.photos/seed/family7/400/300", uploader: "Sarah", date: "Feb 10, 2026" },
-    { _id: "8", url: "https://picsum.photos/seed/family8/400/300", uploader: "Alex", date: "Feb 5, 2026" },
-];
+const API = "https://goodhome-backend.onrender.com/api";
 
 function MediaPage() {
-    const [media] = useState(placeholderMedia);
+    const { user, groupId } = useOutletContext();
+    const [media, setMedia] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
     const [lightbox, setLightbox] = useState(null);
 
-    const handleUpload = () => {
-        // TODO: Open file picker → POST /api/media (multipart/form-data)
-        alert("Upload functionality requires backend /api/media endpoint (not yet implemented)");
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef(null);
+
+    const token = localStorage.getItem("token");
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const fetchMedia = () => {
+        if (!groupId) return;
+        setLoading(true);
+        axios
+            .get(`${API}/groups/${groupId}/media`, { headers })
+            .then((res) => { setMedia(res.data); setError(""); })
+            .catch(() => setError("Failed to load media"))
+            .finally(() => setLoading(false));
+    };
+
+    useEffect(() => { fetchMedia(); }, [groupId]);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        setError("");
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("groupId", groupId);
+
+        axios
+            .post(`${API}/media/upload`, formData, {
+                headers: {
+                    ...headers,
+                    "Content-Type": "multipart/form-data"
+                }
+            })
+            .then(() => {
+                fetchMedia();
+            })
+            .catch((err) => setError(err.response?.data?.message || "Failed to upload photo"))
+            .finally(() => {
+                setUploading(false);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+            });
+    };
+
+    const getUploaderName = (item) => {
+        if (item.uploader?.name) return item.uploader.name;
+        if (item.uploaderName) return item.uploaderName;
+        if (item.uploader === user?._id) return user.name;
+        return String(item.uploader || "Unknown").substring(0, 8);
     };
 
     return (
         <div className="feature-page">
             <div className="feature-header">
                 <h3 style={{ margin: 0 }}>{media.length} Photos Shared</h3>
-                <button className="btn-accent" onClick={handleUpload}>
+
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    style={{ display: "none" }}
+                    accept="image/*"
+                    onChange={handleFileChange}
+                />
+                <button
+                    className="btn-accent"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                >
                     <Upload size={18} />
-                    <span>Upload Photo</span>
+                    <span>{uploading ? "Uploading..." : "Upload Photo"}</span>
                 </button>
             </div>
+
+            {loading && <p style={{ color: "var(--color-text-secondary)" }}>Loading media...</p>}
+            {error && <p style={{ color: "#F87171" }}>{error}</p>}
 
             <div className="media-grid">
                 {media.map((item) => (
                     <div className="media-card" key={item._id} onClick={() => setLightbox(item)}>
-                        <img src={item.url} alt={`Shared by ${item.uploader}`} loading="lazy" />
+                        {/* Backend should return fileUrl or url */}
+                        <img src={item.fileUrl || item.url} alt={`Shared by ${getUploaderName(item)}`} loading="lazy" />
                         <div className="media-card-info">
-                            <span><User size={13} /> {item.uploader}</span>
-                            <span><Calendar size={13} /> {item.date}</span>
+                            <span><User size={13} /> {getUploaderName(item)}</span>
+                            <span><Calendar size={13} /> {new Date(item.createdAt || item.date).toLocaleDateString()}</span>
                         </div>
                     </div>
                 ))}
+                {!loading && media.length === 0 && !error && (
+                    <div className="empty-state" style={{ padding: "40px", gridColumn: "1 / -1" }}>
+                        <ImageIcon size={48} color="var(--color-text-secondary)" style={{ marginBottom: 16 }} />
+                        <h3 style={{ margin: "0 0 8px 0", color: "var(--color-text-primary)" }}>No photos yet</h3>
+                        <p>Be the first to share a memory with the group!</p>
+                    </div>
+                )}
             </div>
 
             {/* Lightbox */}
@@ -50,9 +116,9 @@ function MediaPage() {
                     <button className="lightbox-close" onClick={() => setLightbox(null)}>
                         <X size={24} />
                     </button>
-                    <img src={lightbox.url} alt="Full size" />
+                    <img src={lightbox.fileUrl || lightbox.url} alt="Full size" />
                     <div className="lightbox-caption">
-                        Shared by {lightbox.uploader} • {lightbox.date}
+                        Shared by {getUploaderName(lightbox)} • {new Date(lightbox.createdAt || lightbox.date).toLocaleDateString()}
                     </div>
                 </div>
             )}
