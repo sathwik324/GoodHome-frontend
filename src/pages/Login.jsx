@@ -5,24 +5,24 @@ import { useAuth } from "../context/AuthContext";
 
 function Login() {
     const navigate = useNavigate();
-    const { login: saveSession } = useAuth();
+    const { login } = useAuth();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [msg, setMsg] = useState("");
 
-    const login = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         try {
             const res = await api.post("/auth/login", { email, password });
+            const data = res.data;
+            console.log("Login response:", data);
 
-            // Save both token AND user object to AuthContext + localStorage
-            saveSession(res.data.token, res.data.user);
+            // Save both token AND user to AuthContext + localStorage
+            login(data.token, data.user);
 
             setMsg("Login successful");
-            setTimeout(() => {
-                navigate("/dashboard");
-            }, 500);
+            navigate("/dashboard");
         } catch (err) {
             setMsg(err.response?.data?.message || "Login failed");
         }
@@ -37,7 +37,7 @@ function Login() {
                     Don't have an account? <Link to="/">Register</Link>
                 </p>
 
-                <form onSubmit={login}>
+                <form onSubmit={handleLogin}>
                     <input
                         placeholder="Email"
                         onChange={(e) => setEmail(e.target.value)}

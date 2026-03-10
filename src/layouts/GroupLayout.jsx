@@ -35,8 +35,7 @@ function GroupLayout() {
             })
             .catch((err) => {
                 if (err.response?.status === 401) {
-                    logout();
-                    navigate("/login");
+                    logout(); // AuthContext.logout already navigates to /login
                 } else if (err.response?.status === 403) {
                     navigate("/dashboard");
                 } else {
@@ -47,8 +46,7 @@ function GroupLayout() {
     }, [groupId, navigate, logout]);
 
     const handleLogout = () => {
-        logout();
-        navigate("/");
+        logout(); // AuthContext.logout already navigates to /login
     };
 
     useEffect(() => {
