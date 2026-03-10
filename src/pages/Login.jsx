@@ -14,12 +14,19 @@ function Login() {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
+            // 1. Get token
             const res = await api.post("/auth/login", { email, password });
-            const data = res.data;
-            console.log("Login response:", data);
+            const token = res.data.token;
+            if (!token) throw new Error("No token received");
 
-            // Save both token AND user to AuthContext + localStorage
-            login(data.token, data.user);
+            // 2. Fetch user profile using the token
+            const meRes = await api.get("/auth/me", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const userData = meRes.data;
+
+            // 3. Save both token AND user to AuthContext + localStorage
+            login(token, userData);
 
             setMsg("Login successful");
             navigate("/dashboard");

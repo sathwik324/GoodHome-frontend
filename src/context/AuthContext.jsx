@@ -12,9 +12,15 @@ export const AuthProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('token');
       const savedUser = localStorage.getItem('user');
-      if (token && savedUser) {
+
+      if (token && savedUser && savedUser !== 'undefined' && savedUser !== 'null') {
         const parsed = JSON.parse(savedUser);
         setUser(parsed);
+      } else if (token) {
+        // If a token exists but no valid user info, clear corrupted state 
+        // to force a clean login.
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
       }
     } catch (e) {
       localStorage.removeItem('token');
