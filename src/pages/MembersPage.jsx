@@ -1,14 +1,22 @@
 import { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import api from "../api/axiosInstance";
-import { Search, UserPlus, Mail, X } from "lucide-react";
+import { Search, UserPlus, Mail, X, Copy, Users } from "lucide-react";
 
 function MembersPage() {
     const { user, groupId } = useOutletContext();
+    const navigate = useNavigate();
     const [members, setMembers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [search, setSearch] = useState("");
+
+    // Invite section state
+    const [inviteCode, setInviteCode] = useState("");
+    const [inviteLoading, setInviteLoading] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    // Invite modal state
     const [showInvite, setShowInvite] = useState(false);
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteMsg, setInviteMsg] = useState("");
@@ -19,11 +27,30 @@ function MembersPage() {
         api
             .get(`/groups/${groupId}/members`)
             .then((res) => { setMembers(res.data); setError(""); })
-            .catch(() => setError("Failed to load members for this group."))
+            .catch((err) => {
+                if (err.response?.status === 403) {
+                    navigate("/dashboard");
+                } else {
+                    setError("Failed to load members for this group.");
+                }
+            })
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => { fetchMembers(); }, [groupId]);
+    const fetchInviteCode = () => {
+        if (!groupId) return;
+        setInviteLoading(true);
+        api
+            .get(`/groups/${groupId}/invite`)
+            .then((res) => setInviteCode(res.data?.inviteCode || ""))
+            .catch(() => { })
+            .finally(() => setInviteLoading(false));
+    };
+
+    useEffect(() => {
+        fetchMembers();
+        fetchInviteCode();
+    }, [groupId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const filtered = members.filter((m) =>
         (m.name || m.user?.name || "").toLowerCase().includes(search.toLowerCase())
@@ -45,12 +72,54 @@ function MembersPage() {
             });
     };
 
+    const copyCode = () => {
+        navigator.clipboard.writeText(inviteCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     return (
         <div className="feature-page">
+            {/* Invite Code Section */}
+            {inviteCode && (
+                <div style={{
+                    background: "var(--color-card)", border: "1px solid var(--color-border)",
+                    borderRadius: "var(--radius-lg)", padding: "20px 24px",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    flexWrap: "wrap", gap: "12px"
+                }}>
+                    <div>
+                        <h4 style={{ margin: "0 0 4px", fontSize: "0.95rem" }}>Invite Members</h4>
+                        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>
+                            Share this code with family members to let them join
+                        </p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <code style={{
+                            background: "var(--color-bg)", border: "1px solid var(--color-border)",
+                            borderRadius: "var(--radius-md)", padding: "8px 16px",
+                            fontFamily: "monospace", fontSize: "1.1rem", letterSpacing: "2px",
+                            color: "var(--color-primary)", fontWeight: "bold"
+                        }}>
+                            {inviteCode}
+                        </code>
+                        <button className="btn-outline" onClick={copyCode} style={{ padding: "8px 16px" }}>
+                            <Copy size={16} /> {copied ? "Copied ✓" : "Copy"}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="feature-header">
-                <div className="search-bar">
-                    <Search size={18} />
-                    <input type="text" placeholder="Search members..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div className="search-bar">
+                        <Search size={18} />
+                        <input type="text" placeholder="Search members..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                    </div>
+                    <span style={{ color: "var(--color-text-secondary)", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                        <Users size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />
+                        {members.length} member{members.length !== 1 && "s"}
+                    </span>
                 </div>
                 <button className="btn-accent" onClick={() => setShowInvite(true)}>
                     <UserPlus size={18} />
@@ -59,7 +128,12 @@ function MembersPage() {
             </div>
 
             {loading && <p style={{ color: "var(--color-text-secondary)" }}>Loading group members...</p>}
-            {error && <p style={{ color: "#F87171" }}>{error}</p>}
+            {error && (
+                <div style={{ color: "#F87171", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <p>{error}</p>
+                    <button className="btn-outline" onClick={fetchMembers} style={{ padding: "6px 14px", fontSize: "0.8rem" }}>Retry</button>
+                </div>
+            )}
 
             <div className="members-grid">
                 {filtered.map((memberObj) => {
@@ -81,7 +155,10 @@ function MembersPage() {
                     );
                 })}
                 {!loading && filtered.length === 0 && (
-                    <p className="empty-state">No members found{search ? ` matching "${search}"` : ""}</p>
+                    <div className="empty-state">
+                        <Users size={48} color="var(--color-text-secondary)" style={{ marginBottom: 12 }} />
+                        <p>No members found{search ? ` matching "${search}"` : ""}</p>
+                    </div>
                 )}
             </div>
 

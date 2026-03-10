@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { useOutletContext } from "react-router-dom";
-import api from "../api/axiosInstance";
+import { useOutletContext, useNavigate } from "react-router-dom";
+import api, { BACKEND_BASE } from "../api/axiosInstance";
 import { Upload, X, User, Calendar, Image as ImageIcon } from "lucide-react";
 
 function MediaPage() {
     const { user, groupId } = useOutletContext();
+    const navigate = useNavigate();
     const [media, setMedia] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [lightbox, setLightbox] = useState(null);
 
     const [uploading, setUploading] = useState(false);
+    const [preview, setPreview] = useState(null); // { file, url }
     const fileInputRef = useRef(null);
 
     const fetchMedia = () => {
@@ -19,38 +21,60 @@ function MediaPage() {
         api
             .get(`/groups/${groupId}/media`)
             .then((res) => { setMedia(res.data); setError(""); })
-            .catch(() => setError("Failed to load media"))
+            .catch((err) => {
+                if (err.response?.status === 403) {
+                    navigate("/dashboard");
+                } else {
+                    setError("Failed to load media");
+                }
+            })
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => { fetchMedia(); }, [groupId]);
+    useEffect(() => { fetchMedia(); }, [groupId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleFileChange = (e) => {
+    const getImageUrl = (item) => {
+        const raw = item.fileUrl || item.url || "";
+        if (raw.startsWith("http")) return raw;
+        return BACKEND_BASE + raw;
+    };
+
+    const handleFileSelect = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const url = URL.createObjectURL(file);
+        setPreview({ file, url });
+    };
 
+    const handleUploadConfirm = () => {
+        if (!preview) return;
         setUploading(true);
         setError("");
 
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", preview.file);
         formData.append("groupId", groupId);
 
-        // Content-Type is multipart/form-data
         api
             .post(`/media/upload`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data"
-                }
+                headers: { "Content-Type": "multipart/form-data" }
             })
-            .then(() => {
-                fetchMedia();
+            .then((res) => {
+                const newItem = res.data;
+                setMedia(prev => [newItem, ...prev]);
+                setPreview(null);
             })
             .catch((err) => setError(err.response?.data?.message || "Failed to upload photo"))
             .finally(() => {
                 setUploading(false);
                 if (fileInputRef.current) fileInputRef.current.value = "";
             });
+    };
+
+    const cancelPreview = () => {
+        if (preview) URL.revokeObjectURL(preview.url);
+        setPreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
     const getUploaderName = (item) => {
@@ -70,7 +94,7 @@ function MediaPage() {
                     ref={fileInputRef}
                     style={{ display: "none" }}
                     accept="image/*"
-                    onChange={handleFileChange}
+                    onChange={handleFileSelect}
                 />
                 <button
                     className="btn-accent"
@@ -82,14 +106,46 @@ function MediaPage() {
                 </button>
             </div>
 
+            {/* Upload Preview */}
+            {preview && (
+                <div style={{
+                    background: "var(--color-card)", border: "1px solid var(--color-border)",
+                    borderRadius: "var(--radius-lg)", padding: "20px", display: "flex",
+                    alignItems: "center", gap: "20px", flexWrap: "wrap"
+                }}>
+                    <img src={preview.url} alt="Preview" style={{
+                        width: "120px", height: "120px", objectFit: "cover",
+                        borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)"
+                    }} />
+                    <div style={{ flex: 1 }}>
+                        <p style={{ margin: "0 0 4px", color: "var(--color-text-primary)", fontWeight: 600 }}>
+                            {preview.file.name}
+                        </p>
+                        <p style={{ margin: 0, color: "var(--color-text-secondary)", fontSize: "0.85rem" }}>
+                            {(preview.file.size / 1024).toFixed(1)} KB
+                        </p>
+                    </div>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                        <button className="btn-outline" onClick={cancelPreview} style={{ padding: "8px 16px" }}>Cancel</button>
+                        <button className="btn-accent" onClick={handleUploadConfirm} disabled={uploading} style={{ padding: "8px 16px" }}>
+                            {uploading ? "Uploading..." : "Confirm Upload"}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {loading && <p style={{ color: "var(--color-text-secondary)" }}>Loading media...</p>}
-            {error && <p style={{ color: "#F87171" }}>{error}</p>}
+            {error && (
+                <div style={{ color: "#F87171", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <p>{error}</p>
+                    <button className="btn-outline" onClick={fetchMedia} style={{ padding: "6px 14px", fontSize: "0.8rem" }}>Retry</button>
+                </div>
+            )}
 
             <div className="media-grid">
                 {media.map((item) => (
                     <div className="media-card" key={item._id} onClick={() => setLightbox(item)}>
-                        {/* Using fileUrl from response */}
-                        <img src={item.fileUrl || item.url} alt={`Shared by ${getUploaderName(item)}`} loading="lazy" />
+                        <img src={getImageUrl(item)} alt={`Shared by ${getUploaderName(item)}`} loading="lazy" />
                         <div className="media-card-info">
                             <span><User size={13} /> {getUploaderName(item)}</span>
                             <span><Calendar size={13} /> {new Date(item.createdAt || item.date).toLocaleDateString()}</span>
@@ -111,7 +167,7 @@ function MediaPage() {
                     <button className="lightbox-close" onClick={() => setLightbox(null)}>
                         <X size={24} />
                     </button>
-                    <img src={lightbox.fileUrl || lightbox.url} alt="Full size" />
+                    <img src={getImageUrl(lightbox)} alt="Full size" onClick={(e) => e.stopPropagation()} />
                     <div className="lightbox-caption">
                         Shared by {getUploaderName(lightbox)} • {new Date(lightbox.createdAt || lightbox.date).toLocaleDateString()}
                     </div>
