@@ -5,7 +5,7 @@ import { useAuth } from "../context/AuthContext";
 
 function Login() {
     const navigate = useNavigate();
-    const { login: saveToken } = useAuth(); // Import from context to persist token
+    const { login: saveSession } = useAuth();
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -14,18 +14,15 @@ function Login() {
     const login = async (e) => {
         e.preventDefault();
         try {
-            const res = await api.post(
-                "/auth/login",
-                { email, password }
-            );
+            const res = await api.post("/auth/login", { email, password });
 
-            // Fix: Actually save the token so ProtectedRoutes and Dashboard can use it!
-            saveToken(res.data.token);
+            // Save both token AND user object to AuthContext + localStorage
+            saveSession(res.data.token, res.data.user);
 
             setMsg("Login successful");
             setTimeout(() => {
                 navigate("/dashboard");
-            }, 1000);
+            }, 500);
         } catch (err) {
             setMsg(err.response?.data?.message || "Login failed");
         }

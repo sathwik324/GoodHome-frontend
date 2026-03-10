@@ -6,7 +6,7 @@ import TopBar from "../components/dashboard/TopBar";
 import { useAuth } from "../context/AuthContext";
 
 function GroupsPage() {
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ function GroupsPage() {
     const [modalError, setModalError] = useState("");
 
     // Invite Modal State
-    const [showInviteModal, setShowInviteModal] = useState(null); // stores { code: string }
+    const [showInviteModal, setShowInviteModal] = useState(null); // stores { code, groupName }
     const [copied, setCopied] = useState(false);
 
     const fetchGroups = () => {
@@ -45,7 +45,10 @@ function GroupsPage() {
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => { fetchGroups(); }, []);
+    // Re-fetch when user changes (session switching)
+    useEffect(() => {
+        fetchGroups();
+    }, [user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleCreate = (e) => {
         e.preventDefault();
@@ -53,10 +56,8 @@ function GroupsPage() {
         api
             .post(`/groups/create`, createForm)
             .then((res) => {
-                // Assuming backend returns { group, inviteCode } or something similar
                 const code = res.data?.inviteCode || res.data?.group?.inviteCode || "UNKNOWN";
                 const newGroupId = res.data?.group?._id || res.data?._id;
-
                 setCreateSuccessData({ code, groupId: newGroupId });
                 setCreateForm({ name: "", description: "" });
                 fetchGroups();
@@ -70,35 +71,56 @@ function GroupsPage() {
     const handleJoin = (e) => {
         e.preventDefault();
         setModalError("");
+        const trimmedCode = inviteCode.trim();
+        if (!trimmedCode) return;
+
         api
-            .post(`/groups/join`, { inviteCode })
+            .post(`/groups/join`, { inviteCode: trimmedCode })
             .then((res) => {
                 setShowJoin(false);
                 setInviteCode("");
                 const newlyJoinedId = res.data?.group?._id || res.data?._id;
+                fetchGroups();
                 if (newlyJoinedId) {
                     navigate(`/groups/${newlyJoinedId}/channels`);
-                } else {
-                    fetchGroups();
                 }
             })
             .catch((err) => {
                 console.error("Join Group Error:", err);
-                setModalError(err.response?.data?.message || "Invalid invite code");
+                const errMsg = err.response?.data?.message || "Invalid invite code";
+                // If already a member, try to find the group and navigate
+                if (errMsg.toLowerCase().includes("already")) {
+                    setModalError(errMsg);
+                    // Try to find matching group
+                    const existingGroup = groups.find(
+                        g => g.inviteCode === trimmedCode
+                    );
+                    if (existingGroup) {
+                        setTimeout(() => {
+                            setShowJoin(false);
+                            navigate(`/groups/${existingGroup._id}/channels`);
+                        }, 1500);
+                    }
+                } else {
+                    setModalError(errMsg);
+                }
             });
     };
 
-    const handleFetchInvite = (e, groupId) => {
+    const handleFetchInvite = (e, groupId, groupName) => {
         e.preventDefault();
         e.stopPropagation();
         api
             .get(`/groups/${groupId}/invite`)
             .then((res) => {
-                setShowInviteModal({ code: res.data?.inviteCode || "No code available" });
+                setShowInviteModal({
+                    code: res.data?.inviteCode || "No code available",
+                    groupName: groupName
+                });
             })
             .catch((err) => {
                 console.error("Fetch invite error:", err);
-                alert("Failed to fetch invite code");
+                setModalError("Failed to fetch invite code");
             });
     };
 
@@ -111,9 +133,9 @@ function GroupsPage() {
     return (
         <div className="dashboard-layout">
             <div className="dashboard-main" style={{ marginLeft: 0 }}>
-                <TopBar pageTitle="Workspace" hideHamburger={true} userName="User" />
+                <TopBar pageTitle="My Groups" hideHamburger={true} />
 
-                <div className="dashboard-content" style={{ maxWidth: 1000, margin: "0 auto" }}>
+                <div className="dashboard-content" style={{ maxWidth: 1100, margin: "0 auto" }}>
                     <div className="feature-header" style={{ marginBottom: "10px" }}>
                         <div>
                             <h2 style={{ margin: 0, fontSize: "1.8rem" }}>My Groups</h2>
@@ -132,11 +154,12 @@ function GroupsPage() {
                     {loading && <p style={{ color: "var(--color-text-secondary)" }}>Loading your groups...</p>}
                     {error && <p style={{ color: "#F87171" }}>{error}</p>}
 
+                    {/* Empty State */}
                     {!loading && groups.length === 0 && !error && (
-                        <div className="empty-state" style={{ padding: "80px 20px", background: "var(--color-card)", borderRadius: "var(--radius-lg)", border: `1px solid var(--color-border)` }}>
+                        <div className="empty-state" style={{ padding: "80px 20px", background: "var(--color-card)", borderRadius: "var(--radius-lg)", border: "1px solid var(--color-border)" }}>
                             <Users size={56} color="var(--color-primary)" style={{ marginBottom: 20, opacity: 0.8 }} />
-                            <h3 style={{ margin: "0 0 8px 0", color: "var(--color-text-primary)", fontSize: "1.4rem" }}>No groups yet</h3>
-                            <p style={{ margin: "0 0 32px 0", fontSize: "1rem" }}>Create or join a group to get started</p>
+                            <h3 style={{ margin: "0 0 8px 0", color: "var(--color-text-primary)", fontSize: "1.4rem" }}>You haven't joined any groups yet</h3>
+                            <p style={{ margin: "0 0 32px 0", fontSize: "1rem" }}>Create a new group for your family or join an existing one using an invite code.</p>
                             <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
                                 <button className="btn-accent" onClick={() => { setShowCreate(true); setCreateSuccessData(null); }} style={{ padding: "12px 24px" }}>Create Group</button>
                                 <button className="btn-primary" onClick={() => setShowJoin(true)} style={{ padding: "12px 24px" }}>Join Group</button>
@@ -144,38 +167,42 @@ function GroupsPage() {
                         </div>
                     )}
 
+                    {/* Groups Grid */}
                     {!loading && groups.length > 0 && (
                         <div className="groups-grid">
                             {groups.map((group, index) => (
-                                <Link to={`/groups/${group._id}/channels`} key={group._id} style={{ textDecoration: "none" }}>
-                                    <div className="group-card">
-                                        <div className="group-card-header">
-                                            <div className={`group-avatar color-${index % 5}`}>
-                                                {group.name.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div className="group-info">
-                                                <h4>{group.name}</h4>
-                                                <p>{group.description || "No description provided."}</p>
-                                            </div>
+                                <div className="group-card" key={group._id}>
+                                    <div className="group-card-header">
+                                        <div className={`group-avatar color-${index % 5}`}>
+                                            {group.name.charAt(0).toUpperCase()}
                                         </div>
-                                        <div className="group-meta">
-                                            <div className="group-meta-item">
-                                                <Users size={16} /> <span>{group.memberCount || group.members?.length || 1}</span>
+                                        <div className="group-info">
+                                            <h4>{group.name}</h4>
+                                            <div className="group-meta-item" style={{ marginTop: "4px" }}>
+                                                <Users size={14} /> <span>{group.memberCount || group.members?.length || 1} members</span>
                                             </div>
-                                            <div className="group-meta-item">
-                                                <User size={16} /> <span>Owner: {group.owner?.name || group.ownerName || "Unknown"}</span>
-                                            </div>
-                                        </div>
-                                        <div className="group-actions">
-                                            <button className="btn-outline" onClick={(e) => handleFetchInvite(e, group._id)}>
-                                                <Copy size={16} /> Invite Code
-                                            </button>
-                                            <button className="btn-outline" style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}>
-                                                Open <ArrowRight size={16} />
-                                            </button>
                                         </div>
                                     </div>
-                                </Link>
+                                    <p style={{ margin: "0 0 16px", color: "var(--color-text-secondary)", fontSize: "0.9rem", lineHeight: 1.5, flex: 1 }}>
+                                        {group.description || "No description provided."}
+                                    </p>
+                                    <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: "16px", marginTop: "auto" }}>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                            <span style={{ fontSize: "0.82rem", color: "var(--color-text-secondary)" }}>
+                                                <User size={14} style={{ verticalAlign: "middle", marginRight: "4px" }} />
+                                                Owner: {group.owner?.name || group.ownerName || "Unknown"}
+                                            </span>
+                                        </div>
+                                        <div className="group-actions" style={{ borderTop: "none", paddingTop: "12px" }}>
+                                            <button className="btn-outline" onClick={(e) => handleFetchInvite(e, group._id, group.name)}>
+                                                <Copy size={14} /> Invite Code
+                                            </button>
+                                            <Link to={`/groups/${group._id}/channels`} className="btn-outline" style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)", textDecoration: "none" }}>
+                                                Open <ArrowRight size={14} />
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     )}
@@ -206,15 +233,13 @@ function GroupsPage() {
                                 </div>
                                 <h3 style={{ fontSize: "1.4rem", color: "var(--color-primary)", marginBottom: "8px" }}>Group Created! 🎉</h3>
                                 <p style={{ color: "var(--color-text-secondary)", marginBottom: "16px" }}>Your invite code is:</p>
-
                                 <div className="invite-code-box">
                                     {createSuccessData.code}
                                 </div>
                                 {copied && <p className="success-temp-msg">Copied!</p>}
-
                                 <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "24px" }}>
                                     <button className="btn-outline" onClick={() => copyToClipboard(createSuccessData.code)}>
-                                        <Copy size={18} /> {copied ? "Copied" : "Copy Code"}
+                                        <Copy size={18} /> {copied ? "Copied ✓" : "Copy Code"}
                                     </button>
                                     <button className="btn-accent" onClick={() => navigate(`/groups/${createSuccessData.groupId}/channels`)}>
                                         Go to Group <ArrowRight size={18} />
@@ -235,7 +260,7 @@ function GroupsPage() {
                             <button className="modal-close" onClick={() => setShowJoin(false)}><X size={20} /></button>
                         </div>
                         <form onSubmit={handleJoin}>
-                            <input placeholder="Enter Invite Code" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} required />
+                            <input placeholder="Enter invite code" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} required />
                             <button className="btn-primary" type="submit">Join Group</button>
                             {modalError && <p className="settings-msg" style={{ color: "#F87171" }}>{modalError}</p>}
                         </form>
@@ -248,7 +273,7 @@ function GroupsPage() {
                 <div className="modal-overlay" onClick={() => setShowInviteModal(null)}>
                     <div className="modal-card" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Invite Friends & Family</h3>
+                            <h3>Invite to {showInviteModal.groupName || "Group"}</h3>
                             <button className="modal-close" onClick={() => setShowInviteModal(null)}><X size={20} /></button>
                         </div>
                         <div style={{ textAlign: "center" }}>
@@ -260,7 +285,7 @@ function GroupsPage() {
                             </div>
                             {copied && <p className="success-temp-msg" style={{ marginBottom: "16px" }}>Copied!</p>}
                             <button className="btn-primary" style={{ width: "100%", justifyContent: "center" }} onClick={() => copyToClipboard(showInviteModal.code)}>
-                                <Copy size={18} /> {copied ? "Copied" : "Copy Code"}
+                                <Copy size={18} /> {copied ? "Copied ✓" : "Copy Code"}
                             </button>
                         </div>
                     </div>
