@@ -137,19 +137,6 @@ function GroupsPage() {
                 <TopBar pageTitle="My Groups" hideHamburger={true} />
 
                 <div className="dashboard-content" style={{ maxWidth: 1100, margin: "0 auto" }}>
-                    {/* User identity badge */}
-                    {user && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "24px", background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", padding: "16px 20px" }}>
-                            <div style={{ width: "44px", height: "44px", borderRadius: "12px", background: "linear-gradient(135deg, var(--color-primary), #818CF8)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "1.1rem", fontWeight: "700", flexShrink: 0 }}>
-                                {user.name?.charAt(0).toUpperCase() || "U"}
-                            </div>
-                            <div>
-                                <div style={{ fontWeight: "600", fontSize: "1rem", color: "var(--color-text-primary)" }}>{user.name}</div>
-                                <div style={{ fontSize: "0.85rem", color: "var(--color-text-secondary)" }}>{user.email}</div>
-                            </div>
-                        </div>
-                    )}
-
                     <div className="feature-header" style={{ marginBottom: "10px" }}>
                         <div>
                             <h2 style={{ margin: 0, fontSize: "1.8rem" }}>My Groups</h2>

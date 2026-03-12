@@ -34,6 +34,8 @@ function MediaPage() {
     useEffect(() => { fetchMedia(); }, [groupId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const getImageUrl = (item) => {
+        // If fileData is a base64 data URI, use it directly
+        if (item.fileData && item.fileData.startsWith("data:")) return item.fileData;
         const raw = item.fileUrl || item.url || "";
         if (raw.startsWith("http")) return raw;
         return BACKEND_BASE + raw;
@@ -51,24 +53,32 @@ function MediaPage() {
         setUploading(true);
         setError("");
 
-        const formData = new FormData();
-        formData.append("file", preview.file);
-        formData.append("groupId", groupId);
-
-        api
-            .post(`/media/upload`, formData, {
-                headers: { "Content-Type": "multipart/form-data" }
-            })
-            .then((res) => {
-                const newItem = res.data;
-                setMedia(prev => [newItem, ...prev]);
-                setPreview(null);
-            })
-            .catch((err) => setError(err.response?.data?.message || "Failed to upload photo"))
-            .finally(() => {
-                setUploading(false);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-            });
+        const reader = new FileReader();
+        reader.onload = () => {
+            const fileData = reader.result; // base64 data URI
+            api
+                .post(`/media/upload`, {
+                    groupId,
+                    fileName: preview.file.name,
+                    fileData,
+                    mimeType: preview.file.type
+                })
+                .then((res) => {
+                    const newItem = res.data;
+                    setMedia(prev => [newItem, ...prev]);
+                    setPreview(null);
+                })
+                .catch((err) => setError(err.response?.data?.message || "Failed to upload photo"))
+                .finally(() => {
+                    setUploading(false);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                });
+        };
+        reader.onerror = () => {
+            setError("Failed to read file");
+            setUploading(false);
+        };
+        reader.readAsDataURL(preview.file);
     };
 
     const cancelPreview = () => {
