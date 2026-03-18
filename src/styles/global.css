@@ -6,10 +6,9 @@ body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
-    /* Radial gradient for a modern deep background */
-    background: radial-gradient(circle at top right, #1E1B4B, var(--color-bg));
+    background-color: var(--color-bg);
     color: var(--color-text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-primary);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
 }
@@ -17,7 +16,6 @@ body {
 /* Base transitions applied globally */
 * {
     box-sizing: border-box;
-    transition: all 0.2s ease-in-out;
 }
 
 /* Layout Utilities */
@@ -33,11 +31,17 @@ body {
 .card {
     background-color: var(--color-card);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
+    border-radius: var(--radius-md);
+    padding: 24px;
     width: 100%;
     max-width: 400px;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    border-color: rgba(99,102,241,0.3);
+    transform: translateY(-2px);
 }
 
 /* Typography elements inside Card */
@@ -65,21 +69,40 @@ form {
 input {
     width: 100%;
     background-color: var(--color-input-bg);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-input-border);
     color: var(--color-text-primary);
-    padding: 14px 16px;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
     outline: none;
+    font-family: var(--font-primary);
+    transition: all 0.2s ease;
 }
 
 input:focus {
     border-color: var(--color-primary);
-    box-shadow: var(--shadow-glow);
+    box-shadow: none;
 }
 
 input::placeholder {
-    color: var(--color-text-secondary);
+    color: var(--color-text-disabled);
+}
+
+textarea {
+    width: 100%;
+    background-color: var(--color-input-bg);
+    border: 1px solid var(--color-input-border);
+    color: var(--color-text-primary);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    outline: none;
+    font-family: var(--font-primary);
+    transition: all 0.2s ease;
+    resize: vertical;
+}
+textarea:focus {
+    border-color: var(--color-primary);
 }
 
 /* Primary Button */
@@ -88,23 +111,65 @@ input::placeholder {
     background-color: var(--color-primary);
     color: white;
     border: none;
-    padding: 14px 16px;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    font-weight: 600;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 500;
     cursor: pointer;
     margin-top: var(--spacing-sm);
-    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .btn-primary:hover {
     background-color: var(--color-primary-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
 }
 
 .btn-primary:active {
-    transform: translateY(1px);
+    transform: scale(0.98);
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background-color: transparent;
+    color: var(--color-text-primary);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.btn-secondary:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+
+/* Danger Button */
+.btn-danger {
+    background-color: var(--color-danger);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.btn-danger:hover {
+    background-color: #dc2626;
 }
 
 /* Links */
